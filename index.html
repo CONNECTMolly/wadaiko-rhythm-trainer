@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#a62b27">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>和太鼓リズムトレーナー</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo"></div><div><h1>和太鼓リズムトレーナー</h1>
+  <div class="subtitle">叩いて登録 → 16分音符へ自動クオンタイズ → 反復練習</div></div></div>
+  <div class="small"><span id="audioStatus" class="status-dot"></span>音声</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="register">叩いて登録</button>
+  <button class="tab" data-tab="practice">練習・スコア</button>
+  <button class="tab" data-tab="help">使い方</button>
+</nav>
+
+<main>
+<section id="register" class="active">
+  <div class="card">
+    <h2>登録設定</h2>
+    <div class="grid-form">
+      <label class="field">曲・フレーズ名<input id="titleInput" type="text" value="新しい練習フレーズ" maxlength="60"></label>
+      <label class="field">BPM<input id="bpmInput" type="number" min="30" max="300" value="100"></label>
+      <label class="field">小節数<input id="barsInput" type="number" min="1" max="32" value="4"></label>
+      <label class="field">記録分解能
+        <select id="quantizeInput">
+          <option value="16" selected>16分音符</option>
+          <option value="32">32分音符</option>
+        </select>
+      </label>
+      <label class="field">登録前カウント<input type="text" value="4拍固定" disabled></label>
+    </div>
+    <div class="notice"><b>手作業で楽譜を入力する機能はありません。</b> カウント後に太鼓を叩くと、そのタイミングを記録し、終了時に選択した16分音符または32分音符へ自動クオンタイズします。</div>
+  </div>
+  <div class="card register-main-card">
+    <div class="register-head">
+      <div id="recordStatus">待機中</div>
+      <div id="recordProgress">0 / 4小節</div>
+    </div>
+    <div id="countInVisual" class="count-in-visual" aria-label="4拍カウント">
+      <div class="count-beat" data-count="1">1</div>
+      <div class="count-beat" data-count="2">2</div>
+      <div class="count-beat" data-count="3">3</div>
+      <div class="count-beat" data-count="4">4</div>
+    </div>
+    <svg class="drum-svg" viewBox="0 0 320 320" aria-label="和太鼓の入力">
+      <circle class="drum-shell" cx="160" cy="168" r="139"/>
+      <g class="drum-zone" data-hit="donL" role="button" tabindex="0" aria-label="左の面">
+        <path class="zone-shape drum-face-left" d="M160 64 A106 106 0 0 0 160 276 Z"/>
+        <text x="112" y="164" class="drum-label-main">左面</text>
+        <text x="112" y="185" class="drum-label-sub">S</text>
+      </g>
+      <g class="drum-zone" data-hit="donR" role="button" tabindex="0" aria-label="右の面">
+        <path class="zone-shape drum-face-right" d="M160 64 A106 106 0 0 1 160 276 Z"/>
+        <text x="208" y="164" class="drum-label-main">右面</text>
+        <text x="208" y="185" class="drum-label-sub">K</text>
+      </g>
+      <line class="drum-face-divider" x1="160" y1="65" x2="160" y2="275"/>
+      <g class="drum-zone rim-zone rim-left" data-rim="left" data-hit="kaL" role="button" tabindex="0" aria-label="左上の縁">
+        <rect class="zone-shape rim-shape" x="-46" y="-28" width="92" height="56" rx="24"/>
+        <text x="0" y="-8" class="drum-label-main">左縁</text>
+        <text x="0" y="11" class="drum-label-sub">A</text>
+      </g>
+      <g class="drum-zone rim-zone rim-right" data-rim="right" data-hit="kaR" role="button" tabindex="0" aria-label="右上の縁">
+        <rect class="zone-shape rim-shape" x="-46" y="-28" width="92" height="56" rx="24"/>
+        <text x="0" y="-8" class="drum-label-main">右縁</text>
+        <text x="0" y="11" class="drum-label-sub">L</text>
+      </g>
+    </svg>
+    <p class="tap-guidance">見えている打面をそのままタップしてください。縁は左上・右上です。</p>
+    <div class="calib-toggle-wrap"><button id="toggleCalibBtn" class="btn gold" type="button">位置調整モード</button></div>
+    <div id="calibPanel" class="calib-panel">
+      <div class="calib-grid">
+        <div class="calib-group">
+          <h3>左縁の位置</h3>
+          <div class="calib-row"><label for="calibLeftX">左右</label><input id="calibLeftX" type="range" min="-60" max="60" step="1" value="0"><output id="calibLeftXVal">0</output></div>
+          <div class="calib-row"><label for="calibLeftY">上下</label><input id="calibLeftY" type="range" min="-60" max="60" step="1" value="0"><output id="calibLeftYVal">0</output></div>
+          <div class="calib-row"><label for="calibLeftRot">角度</label><input id="calibLeftRot" type="range" min="-60" max="-5" step="1" value="-32"><output id="calibLeftRotVal">-32</output></div>
+        </div>
+        <div class="calib-group">
+          <h3>右縁の位置</h3>
+          <div class="calib-row"><label for="calibRightX">左右</label><input id="calibRightX" type="range" min="-60" max="60" step="1" value="0"><output id="calibRightXVal">0</output></div>
+          <div class="calib-row"><label for="calibRightY">上下</label><input id="calibRightY" type="range" min="-60" max="60" step="1" value="0"><output id="calibRightYVal">0</output></div>
+          <div class="calib-row"><label for="calibRightRot">角度</label><input id="calibRightRot" type="range" min="5" max="60" step="1" value="32"><output id="calibRightRotVal">32</output></div>
+        </div>
+      </div>
+      <div class="calib-actions">
+        <button id="saveCalibBtn" class="btn primary" type="button">この位置で保存</button>
+        <button id="resetCalibBtn" class="btn" type="button">初期位置に戻す</button>
+      </div>
+      <div class="calib-note">スライダーを動かすと、登録用太鼓と練習用太鼓の両方にすぐ反映されます。</div>
+    </div>
+    <div class="register-controls">
+      <button id="recordBtn" class="btn primary">4拍カウント後に登録</button>
+      <button id="stopRecordBtn" class="btn danger" disabled>途中終了</button>
+      <button id="clearRecordBtn" class="btn" disabled>録り直す</button>
+    </div>
+    <div id="hitStream" class="mobile-hit-stream"></div>
+    <div class="muted small" style="margin-top:7px">登録中は譜面を表示せず、終了後に選択した分解能へ自動変換します。</div>
+  </div>
+
+  <div id="generatedPanel" class="card generated">
+    <h2 id="generatedTitle">自動生成された譜面</h2>
+    <p id="generatedDescription" class="muted">演奏タイミングを選択した分解能へ丸めています。</p>
+    <div class="summary-grid">
+      <div class="summary-box">記録打数<strong id="rawCount">0</strong></div>
+      <div class="summary-box">生成音符数<strong id="noteCount">0</strong></div>
+      <div class="summary-box">クオンタイズ<strong id="summaryDivision">16分</strong></div>
+      <div class="summary-box">BPM<strong id="summaryBpm">100</strong></div>
+    </div>
+    <div id="generatedChart" class="chart-wrap"></div>
+    <div class="edit-panel">
+      <div class="edit-toolbar">
+        <button id="toggleEditBtn" class="btn gold" type="button">譜面修正モード</button>
+        <span id="editModeStatus" class="small muted">オフ</span>
+      </div>
+      <div class="small muted">修正モード中は、下の音を選んでマスをタップすると変更できます。</div>
+      <div id="editPalette" class="edit-palette">
+        <button class="edit-note-btn selected" data-edit-note="">休</button>
+        <button class="edit-note-btn n-don" data-edit-note="donL">左面</button>
+        <button class="edit-note-btn n-don" data-edit-note="donR">右面</button>
+        <button class="edit-note-btn n-ka" data-edit-note="kaL">左縁</button>
+        <button class="edit-note-btn n-ka" data-edit-note="kaR">右縁</button>
+        <button class="edit-note-btn n-don n-big" data-edit-note="bigDon">両面</button>
+        <button class="edit-note-btn n-ka n-big" data-edit-note="bigKa">両縁</button>
+      </div>
+    </div>
+    <div class="inline" style="margin-top:13px">
+      <button id="saveBtn" class="btn primary">この曲を保存</button>
+      <button id="exportBtn" class="btn secondary">JSONを書き出す</button>
+      <button id="redoBtn" class="btn gold">録り直す</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>保存済みの曲</h2>
+    <div class="inline" style="margin-bottom:12px">
+      <label class="btn" for="importInput">JSONを読み込む</label>
+      <input id="importInput" type="file" accept=".json,application/json" hidden>
+    </div>
+    <div id="savedList" class="saved-list"></div>
+  </div>
+</section>
+
+<section id="practice">
+  <div class="card">
+    <h2>練習設定</h2>
+    <div class="grid-form">
+      <label class="field">登録した曲<select id="practiceSelect"></select></label>
+      <label class="field">練習速度
+        <select id="speedSelect"><option value=".5">50%</option><option value=".75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option></select>
+      </label>
+      <label class="field">左右判定
+        <select id="handMode"><option value="strict" selected>左右を厳密に判定</option><option value="sound">ドン／カッだけ判定</option></select>
+      </label>
+      <label class="field">音源オフセット（ms）<input id="offsetInput" type="number" min="-5000" max="5000" value="0"></label>
+      <label class="field">ノーツ間隔<input id="spacingInput" type="range" min="70" max="180" value="100"><span id="spacingValue" class="small muted">100%</span></label>
+      <label class="field">ノーツサイズ<input id="noteSizeInput" type="range" min="70" max="130" value="100"><span id="noteSizeValue" class="small muted">100%</span></label>
+    </div>
+    <div class="inline" style="margin-top:12px">
+      <label class="btn" for="audioInput">手元の音源を選択（任意）</label>
+      <input id="audioInput" type="file" accept="audio/*" hidden>
+      <span id="audioFileName" class="muted">音源なし：メトロノームで練習</span>
+    </div>
+  </div>
+
+  <div class="practice-layout">
+    <div>
+      <div class="card lane-card">
+        <canvas id="lane"></canvas>
+        <div id="judgement" class="judgement">準備OK</div>
+        <div class="hud">
+          <div class="hud-box"><div class="small">SCORE</div><div id="score" class="hud-value">0</div></div>
+          <div class="hud-box"><div class="small">COMBO</div><div id="combo" class="hud-value">0</div></div>
+          <div class="hud-box"><div class="small">ACCURACY</div><div id="accuracy" class="hud-value">0%</div></div>
+          <div class="hud-box"><div class="small">BPM</div><div id="effectiveBpm" class="hud-value">100</div></div>
+        </div>
+      </div>
+      <div id="resultPanel" class="result">
+        <h3>練習結果</h3>
+        <div class="result-grid"><div>良<strong id="greatCount">0</strong></div><div>可<strong id="goodCount">0</strong></div><div>不可<strong id="missCount">0</strong></div></div>
+        <p style="text-align:center">最終スコア：<strong id="finalScore">0</strong></p>
+        <p id="highScoreText" style="text-align:center;font-weight:850"></p>
+      </div>
+    </div>
+
+    <div class="card drum-card">
+      <h2>練習用太鼓</h2>
+      <svg class="drum-svg" viewBox="0 0 320 320" aria-label="和太鼓の入力">
+        <circle class="drum-shell" cx="160" cy="168" r="139"/>
+        <g class="drum-zone" data-hit="donL" role="button" tabindex="0" aria-label="左の面"><path class="zone-shape drum-face-left" d="M160 64 A106 106 0 0 0 160 276 Z"/><text x="112" y="164" class="drum-label-main">左面</text><text x="112" y="185" class="drum-label-sub">S</text></g>
+        <g class="drum-zone" data-hit="donR" role="button" tabindex="0" aria-label="右の面"><path class="zone-shape drum-face-right" d="M160 64 A106 106 0 0 1 160 276 Z"/><text x="208" y="164" class="drum-label-main">右面</text><text x="208" y="185" class="drum-label-sub">K</text></g>
+        <line class="drum-face-divider" x1="160" y1="65" x2="160" y2="275"/>
+        <g class="drum-zone rim-zone rim-left" data-rim="left" data-hit="kaL" role="button" tabindex="0" aria-label="左上の縁"><rect class="zone-shape rim-shape" x="-46" y="-28" width="92" height="56" rx="24"/><text x="0" y="-8" class="drum-label-main">左縁</text><text x="0" y="11" class="drum-label-sub">A</text></g>
+        <g class="drum-zone rim-zone rim-right" data-rim="right" data-hit="kaR" role="button" tabindex="0" aria-label="右上の縁"><rect class="zone-shape rim-shape" x="-46" y="-28" width="92" height="56" rx="24"/><text x="0" y="-8" class="drum-label-main">右縁</text><text x="0" y="11" class="drum-label-sub">L</text></g>
+      </svg>
+      <div class="practice-start-controls"><button id="startPracticeBtn" class="btn primary">練習スタート</button><button id="stopPracticeBtn" class="btn danger" disabled>停止</button></div>
+      <div class="key-help"><span>A：左上の縁</span><span>S：左面</span><span>K：右面</span><span>L：右上の縁</span></div>
+      <div class="notice small">両面・両縁は左右を約100ms以内に叩くと同時打ちとして判定します。</div>
+    </div>
+  </div>
+</section>
+
+<section id="help">
+  <div class="card">
+    <h2>使い方</h2>
+    <ol>
+      <li>曲名、BPM、小節数を設定します。</li>
+      <li>「登録開始」を押すと、必ず4拍のクリックが鳴ります。4拍の後から記録が始まります。</li>
+      <li>カウント後、画面上の太鼓またはA・S・K・Lキーで演奏します。</li>
+      <li>終了すると、選択した16分音符または32分音符へ自動クオンタイズした譜面が生成されます。</li>
+      <li>保存後、「練習・スコア」から選んで反復練習します。</li>
+    </ol>
+    <h3>クオンタイズ仕様</h3>
+    <p>16分音符では1拍を4分割、32分音符では1拍を8分割し、最も近い位置へ丸めます。同じ位置で左右の面、または左右の縁を約100ms以内に叩いた場合は両手打ちとして保存します。</p>
+    <h3>標準搭載曲</h3>
+    <p><b>まつり2026-07-11</b> をHTML内部に収録しています。別の端末で初めて開いた場合も、JSONの読み込みなしで練習できます。譜面修正後に保存した場合は、その端末では修正版が優先されます。</p>
+    <h3>配布について</h3>
+    <p>GitHub Pagesで公開したURLをiPhoneのSafariで開くと利用できます。ホーム画面へ追加するとアプリのように起動できます。</p>
+  </div>
+</section>
+</main>
+<footer>オリジナルの和太鼓練習用Webアプリです。特定の市販ゲームとは関係ありません。</footer>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>
