@@ -33,19 +33,39 @@ function drawLane(){
   if(c.width!==Math.floor(w*dpr)||c.height!==Math.floor(h*dpr))c.width=Math.floor(w*dpr),c.height=Math.floor(h*dpr);
   g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);g.fillStyle="#211c19";g.fillRect(0,0,w,h);
   const y=h*.53,x=w*.17;
-  const sizeScale = Number($("noteSizeInput")?.value||100) / 100;
-  const noteRadius = 21 * sizeScale;
+  const sizeScale=Number($("noteSizeInput")?.value||100)/100;
+  const noteRadius=21*sizeScale;
   g.fillStyle="#efe4cf";g.fillRect(0,y-55,w,110);g.strokeStyle="#6b5544";g.lineWidth=3;g.strokeRect(0,y-55,w,110);
   g.fillStyle="#fff8e9";g.beginPath();g.arc(x,y,noteRadius,0,Math.PI*2);g.fill();g.strokeStyle="#a62b27";g.lineWidth=7;g.stroke();
   g.fillStyle="#a62b27";g.font=`bold ${Math.max(11,12*sizeScale)}px system-ui`;g.textAlign="center";g.fillText("ここで打つ",x,y+4);
-  if(!practice){g.fillStyle="#fff";g.font="bold 23px system-ui";g.fillText("保存した曲を選んで練習開始",w/2,55);return}
+
+  const memory=window.memoryCheckState||null;
+  if(memory){
+    const now=audio().currentTime;
+    g.fillStyle="#fff";g.font="bold 22px system-ui";
+    if(now<memory.recordStart){
+      const remain=Math.max(1,Math.ceil((memory.recordStart-now)/memory.beat));
+      g.fillText(`暗譜チェック　あと${remain}拍`,w/2,55);
+    }else{
+      const elapsed=Math.max(0,now-memory.recordStart);
+      const bar=Math.min(memory.chart.bars,Math.floor(elapsed/(memory.beat*4))+1);
+      g.fillText(`譜面を見ずに演奏　${bar} / ${memory.chart.bars}小節`,w/2,55);
+    }
+    return;
+  }
+
+  const demo=window.examplePlaybackState||null;
+  const state=practice||demo;
+  if(!state){g.fillStyle="#fff";g.font="bold 23px system-ui";g.fillText("保存した曲を選んで練習開始",w/2,55);return}
   const now=audio().currentTime;
-  const spacingScale = Number($("spacingInput")?.value||100) / 100;
-  const px = (Math.min(520,w*.64)/Math.max(.8,practice.beat*4)) * spacingScale;
-  practice.events.forEach(e=>{
+  g.fillStyle="#fff";g.font="bold 20px system-ui";
+  g.fillText(demo&&!practice?"お手本再生中：譜面に合わせて音が鳴ります":"譜面を見て練習中",w/2,40);
+  const spacingScale=Number($("spacingInput")?.value||100)/100;
+  const px=(Math.min(520,w*.64)/Math.max(.8,state.beat*4))*spacingScale;
+  state.events.forEach(e=>{
     const nx=x+(e.time-now)*px;
     if(nx<-(noteRadius+24)||nx>w+noteRadius+24)return;
-    g.globalAlpha=e.status==="pending"?1:.22;
+    g.globalAlpha=practice?(e.status==="pending"?1:.22):1;
     g.fillStyle=colors[e.type]||"#aaa";
     g.beginPath();g.arc(nx,y,noteRadius,0,Math.PI*2);g.fill();
     g.strokeStyle="#fff";g.lineWidth=3;g.stroke();
@@ -60,6 +80,7 @@ function flash(type){document.querySelectorAll(`[data-hit="${type}"]`).forEach(e
 function inputHit(type){
   const a=audio(),time=a.currentTime;playHit(type,time);flash(type);
   if(recording&&time>=recording.recordStart&&time<=recording.end){recording.raw.push({type,time});addHitChip(type)}
+  if(window.memoryCheckState&&typeof window.memoryCheckHit==="function")window.memoryCheckHit(type,time);
   practiceHit(type,time)
 }
 document.querySelectorAll("[data-hit]").forEach(zone=>{
@@ -74,4 +95,4 @@ document.querySelectorAll("[data-hit]").forEach(zone=>{
 addEventListener("keydown",e=>{if(e.repeat||["INPUT","SELECT","TEXTAREA"].includes(document.activeElement?.tagName))return;const map={a:"kaL",s:"donL",k:"donR",l:"kaR"},t=map[e.key.toLowerCase()];if(t){e.preventDefault();inputHit(t)}});
 $("audioInput").onchange=e=>{chosenAudio=e.target.files?.[0]||null;$("audioFileName").textContent=chosenAudio?chosenAudio.name:"音源なし：メトロノームで練習"};
 $("barsInput").oninput=()=>{if(!recording&&!currentChart)$("recordProgress").textContent=`0 / ${$("barsInput").value||4}小節`};
-addEventListener("resize",drawLane);addEventListener("beforeunload",()=>stopPractice(false));
+addEventListener("resize",drawLane);addEventListener("beforeunload",()=>{stopPractice(false);window.stopMemoryCheck?.(false)});
