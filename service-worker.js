@@ -1,4 +1,4 @@
-const CACHE="wadaiko-matsuri-v18";
+const CACHE="wadaiko-matsuri-v19";
 const CORE=[
   "./",
   "./index.html",
@@ -12,6 +12,8 @@ const CORE=[
   "./app-6.js",
   "./app-7.js",
   "./app-8.js",
+  "./app-9.js",
+  "./app-10.js",
   "./manifest.webmanifest",
   "./icon.svg",
   "./まつり2026-07-11.json",
