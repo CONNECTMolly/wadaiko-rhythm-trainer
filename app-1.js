@@ -1,13 +1,21 @@
 "use strict";
 const STORE="wadaikoChartsV2", SCORE_STORE="wadaikoScoresV2";
-const BUILT_IN_CHARTS=[{"id":"builtin-matsuri-2026-07-11","title":"まつり2026-07-11","bpm":100,"bars":4,"division":32,"notes":["donR","","","","","","","","donL","","","","","","","","donR","","","","","","kaR","kaL","kaR","","","","","","kaL","","donR","","","","","donR","","","","","","","","donL","","donR","","","","","","","","","bigKa","","","","","","","","donR","","","","","","","","donL","","","","","","","","donR","","","","","","kaR","kaL","kaR","","","","","","kaL","","donR","","","","","donR","","","","","","","","donL","","donR","","","","","","donL","","","donR","","","","","","",""],"rawHits":26},{"id":"builtin-hiyoku","title":"ひよく","bpm":100,"bars":2,"division":32,"notes":["donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","",""],"rawHits":17}];
+const BUILT_IN_CHARTS=[{"id":"builtin-matsuri-2026-07-11","title":"まつり2026-07-11","bpm":100,"bars":4,"division":32,"notes":["donR","","","","","","","","donL","","","","","","","","donR","","","","","","kaR","kaL","kaR","","","","","","kaL","","donR","","","","","donR","","","","","","","","donL","","donR","","","","","","","","","bigKa","","","","","","","","donR","","","","","","","","donL","","","","","","","","donR","","","","","","kaR","kaL","kaR","","","","","","kaL","","donR","","","","","donR","","","","","","","","donL","","donR","","","","","","","donL","","donR","","","","","","",""],"rawHits":26},{"id":"builtin-hiyoku","title":"ひよく","bpm":100,"bars":2,"division":32,"notes":["donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","","","donR","","","","","donL","",""],"rawHits":17}];
 const isBuiltInChart=id=>BUILT_IN_CHARTS.some(c=>c.id===id);
 const BUILTIN_REVISION_KEY="wadaikoBuiltinRevision";
-const BUILTIN_REVISION="builtin-collection-revision-3";
+const BUILTIN_REVISION="builtin-collection-revision-4";
 function ensureBuiltinRevision(){
   if(localStorage.getItem(BUILTIN_REVISION_KEY)===BUILTIN_REVISION)return;
   const stored=getStoredCharts().filter(c=>!(["builtin-matsuri-2026-07-11","builtin-hiyoku"].includes(c.id)));
   setCharts(stored);
+  const scores=getScores();
+  delete scores["builtin-matsuri-2026-07-11"];
+  setScores(scores);
+  try{
+    const memoryScores=JSON.parse(localStorage.getItem("wadaikoMemoryScoresV1")||"{}");
+    delete memoryScores["builtin-matsuri-2026-07-11"];
+    localStorage.setItem("wadaikoMemoryScoresV1",JSON.stringify(memoryScores));
+  }catch{}
   localStorage.setItem(BUILTIN_REVISION_KEY,BUILTIN_REVISION);
 }
 const labels={"":"休",donL:"左ドン",donR:"右ドン",kaL:"左カッ",kaR:"右カッ",bigDon:"両面",bigKa:"両縁"};
