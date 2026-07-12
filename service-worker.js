@@ -1,4 +1,4 @@
-const CACHE="wadaiko-matsuri-v13";
+const CACHE="wadaiko-matsuri-v14";
 const ASSETS=[
   "./",
   "./index.html",
