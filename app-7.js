@@ -32,10 +32,10 @@
   const wrapper=document.createElement("div");
   wrapper.innerHTML=`
     <div class="example-controls">
-      <button id="playExampleBtn" class="btn gold" type="button">🔊 お手本を聞く</button>
+      <button id="playExampleBtn" class="btn gold" type="button">👀 お手本を見る</button>
       <button id="stopExampleBtn" class="btn" type="button" disabled>停止</button>
     </div>
-    <div id="exampleStatus" class="example-status">選択中の譜面を4拍カウント後に自動演奏します</div>
+    <div id="exampleStatus" class="example-status">4拍カウント後、譜面を流しながら自動演奏します</div>
   `;
   practiceControls.parentNode.insertBefore(wrapper,practiceControls);
 
@@ -52,10 +52,10 @@
     },Math.max(0,delayMs));
   }
 
-  function setIdle(message="選択中の譜面を4拍カウント後に自動演奏します"){
+  function setIdle(message="4拍カウント後、譜面を流しながら自動演奏します"){
     playBtn.disabled=false;
     stopBtn.disabled=true;
-    if(!practice)document.getElementById("startPracticeBtn").disabled=false;
+    if(!practice&&!window.memoryCheckState)document.getElementById("startPracticeBtn").disabled=false;
     status.textContent=message;
   }
 
@@ -65,12 +65,17 @@
       exampleTimer=null;
     }
     exampleState=null;
+    window.examplePlaybackState=null;
+    if(!practice&&!window.memoryCheckState)document.getElementById("practice").classList.remove("practice-live");
+    if(!practice&&!window.memoryCheckState)document.getElementById("judgement").textContent="準備OK";
+    drawLane();
     setIdle(message);
   }
 
   function startExample(){
     stopExample();
     if(practice)stopPractice(false);
+    if(window.memoryCheckState)window.stopMemoryCheck?.(false);
 
     const chart=selectedChart();
     if(!chart){
@@ -87,35 +92,45 @@
     const bpm=chart.bpm*speed;
     const beat=60/bpm;
     const step=beat*4/chart.division;
-    const start=audioContext.currentTime+.25;
+    const start=audioContext.currentTime+.35;
     const noteStart=start+beat*4;
     const events=[];
 
     chart.notes.forEach((type,index)=>{
-      if(type)events.push({type,time:noteStart+index*step});
+      if(type)events.push({type,index,time:noteStart+index*step,status:"pending"});
     });
 
     exampleState={
+      chart,
+      bpm,
       start,
       noteStart,
       beat,
+      step,
       clickIndex:0,
       eventIndex:0,
       events,
       end:noteStart+chart.notes.length*step+.35
     };
+    window.examplePlaybackState=exampleState;
 
     playBtn.disabled=true;
     stopBtn.disabled=false;
     document.getElementById("startPracticeBtn").disabled=true;
+    document.getElementById("practice").classList.add("practice-live");
+    document.getElementById("resultPanel").classList.remove("show");
+    document.getElementById("memoryResultPanel")?.classList.remove("show");
+    document.getElementById("judgement").textContent="お手本";
     status.textContent="4拍カウント：1 / 4";
+    arrangeMobilePracticeView();
+    drawLane();
 
     const lookAhead=.12;
     exampleTimer=setInterval(()=>{
       if(!exampleState)return;
       const now=audioContext.currentTime;
 
-      while(exampleState.clickIndex<4 && exampleState.start+exampleState.clickIndex*beat<now+lookAhead){
+      while(exampleState.clickIndex<4&&exampleState.start+exampleState.clickIndex*beat<now+lookAhead){
         const clickTime=exampleState.start+exampleState.clickIndex*beat;
         clickBeat(exampleState.clickIndex===0,clickTime);
         exampleState.clickIndex++;
@@ -125,28 +140,31 @@
         const count=Math.min(4,Math.max(1,Math.floor((now-exampleState.start)/beat)+1));
         status.textContent=`4拍カウント：${count} / 4`;
       }else{
-        status.textContent=`お手本を演奏中　BPM ${Math.round(bpm)}`;
+        status.textContent=`譜面を見ながらお手本再生中　BPM ${Math.round(bpm)}`;
       }
 
-      while(exampleState.eventIndex<exampleState.events.length && exampleState.events[exampleState.eventIndex].time<now+lookAhead){
+      while(exampleState.eventIndex<exampleState.events.length&&exampleState.events[exampleState.eventIndex].time<now+lookAhead){
         const event=exampleState.events[exampleState.eventIndex];
         playHit(event.type,event.time);
         flashAt(event.type,(event.time-now)*1000);
         exampleState.eventIndex++;
       }
 
-      if(now>=exampleState.end){
-        stopExample("お手本の演奏が終わりました");
-      }
+      drawLane();
+      if(now>=exampleState.end)stopExample("お手本の演奏が終わりました");
     },25);
   }
 
+  window.startExamplePlayback=startExample;
+  window.stopExamplePlayback=stopExample;
   playBtn.addEventListener("click",startExample);
   stopBtn.addEventListener("click",()=>stopExample());
-  document.getElementById("startPracticeBtn").addEventListener("click",()=>stopExample("練習モードを開始します"));
+  document.getElementById("startPracticeBtn").addEventListener("click",()=>{
+    if(exampleState)stopExample("練習モードを開始します");
+  });
   document.querySelectorAll(".tab").forEach(tab=>{
     tab.addEventListener("click",()=>{
-      if(tab.dataset.tab!=="practice" && exampleState)stopExample();
+      if(tab.dataset.tab!=="practice"&&exampleState)stopExample();
     });
   });
   window.addEventListener("beforeunload",()=>stopExample(""));
