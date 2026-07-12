@@ -32,7 +32,7 @@ p{line-height:1.7;color:#6e5d53}.error{color:#8b2e28;font-weight:700}</style>
       await Promise.all(keys.map(key=>caches.delete(key)));
     }
     status.textContent='更新が完了しました。最新版を開きます。';
-    setTimeout(()=>location.replace('./?v=18&t='+Date.now()),500);
+    setTimeout(()=>location.replace('./?v=19&t='+Date.now()),500);
   }catch(error){
     status.className='error';
     status.textContent='自動更新に失敗しました。SafariまたはChromeでページを再読み込みしてください。';
