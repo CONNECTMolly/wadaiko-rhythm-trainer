@@ -1,4 +1,4 @@
-const CACHE="wadaiko-matsuri-v19";
+const CACHE="wadaiko-matsuri-v20";
 const CORE=[
   "./",
   "./index.html",
