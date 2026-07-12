@@ -1,4 +1,4 @@
-const CACHE="wadaiko-matsuri-v12";
+const CACHE="wadaiko-matsuri-v13";
 const ASSETS=[
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const ASSETS=[
   "./app-4.js",
   "./app-5.js",
   "./app-6.js",
+  "./app-7.js",
   "./manifest.webmanifest",
   "./icon.svg",
   "./まつり2026-07-11.json"
