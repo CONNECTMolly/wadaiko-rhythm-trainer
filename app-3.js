@@ -34,7 +34,18 @@ $("exportBtn").onclick=()=>{
   a.href=URL.createObjectURL(b);a.download=(currentChart.title.replace(/[\\/:*?"<>|]/g,"_")||"wadaiko")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
 };
 $("importInput").onchange=async e=>{
-  const f=e.target.files?.[0];if(!f)return;try{currentChart=normalize(JSON.parse(await f.text()));currentChart.id=uid();showGenerated();alert("読み込みました。保存すると一覧へ追加されます。")}catch{alert("JSONを読み込めませんでした。")}e.target.value=""
+  const f=e.target.files?.[0];
+  if(!f)return;
+  try{
+    currentChart=normalize(JSON.parse(await f.text()));
+    const builtInMatch=BUILT_IN_CHARTS.find(chart=>String(chart.title||"").trim()===String(currentChart.title||"").trim());
+    currentChart.id=builtInMatch?builtInMatch.id:uid();
+    showGenerated();
+    alert(builtInMatch?"標準搭載曲として読み込みました。保存すると同名の標準曲を更新します。":"読み込みました。保存すると一覧へ追加されます。");
+  }catch{
+    alert("JSONを読み込めませんでした。");
+  }
+  e.target.value="";
 };
 function renderSaved(){
   const root=$("savedList"),arr=getCharts();root.innerHTML="";
