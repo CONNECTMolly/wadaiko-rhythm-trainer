@@ -1,5 +1,5 @@
 (()=>{
-  const files=["app-1.js","app-2.js","app-3.js","app-4.js","app-5.js","app-7.js","app-8.js","app-6.js"];
+  const files=["app-1.js","app-2.js","app-3.js","app-4.js","app-5.js","app-7.js","app-8.js","app-9.js","app-10.js","app-6.js"];
   const loadNext=index=>{
     if(index>=files.length)return;
     const script=document.createElement("script");
